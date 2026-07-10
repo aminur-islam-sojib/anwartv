@@ -103,7 +103,7 @@ export default function ArticleListTable() {
                   key={article._id}
                   className="hover:bg-slate-50/80 transition-colors"
                 >
-                  <td className="p-4 font-semibold text-slate-900 max-w-[300px] truncate">
+                  <td className="p-4 font-semibold text-slate-900 max-w-75 truncate">
                     {article.title}
                   </td>
                   <td className="p-4 text-slate-500 font-medium">

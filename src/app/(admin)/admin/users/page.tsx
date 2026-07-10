@@ -456,7 +456,7 @@ export default function UserManagementPage() {
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] border-collapse text-left">
+          <table className="w-full min-w-260 border-collapse text-left">
             <thead>
               <tr className="border-b border-border bg-muted/40 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-3.5">User</th>

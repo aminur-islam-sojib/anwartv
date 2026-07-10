@@ -1,3 +1,4 @@
+import DashboardShell from "@/components/admin/DashboardShell";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
@@ -12,8 +13,7 @@ export default async function AdminLayout({
 
   return (
     <div className="admin-shell">
-      {/* sidebar, etc. — you have session.user.role available here */}
-      {children}
+      <DashboardShell>{children}</DashboardShell>
     </div>
   );
 }

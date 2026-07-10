@@ -34,11 +34,17 @@ export default function RegisterPage() {
     }
 
     // auto-login after successful registration
-    await signIn("credentials", {
+    const result = await signIn("credentials", {
       email: formData.email,
       password: formData.password,
       redirect: false,
     });
+
+    if (result?.error) {
+      setError("Unable to sign in after registration");
+      setLoading(false);
+      return;
+    }
 
     setLoading(false);
     router.push("/admin/dashboard");

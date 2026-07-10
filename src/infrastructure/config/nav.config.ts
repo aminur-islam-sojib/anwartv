@@ -29,7 +29,6 @@ export const NAV_CONFIG = {
       icon: FileText,
       href: "/admin/articles",
       group: "কনটেন্ট",
-      badge: "128",
     },
     {
       label: "ইউজার ও রোলস",

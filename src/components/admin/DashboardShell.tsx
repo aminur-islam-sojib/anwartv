@@ -19,6 +19,7 @@ export default function DashboardShell({ children }: DashboardShellProps) {
   const role = session?.user?.role;
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [articleCount, setArticleCount] = useState<number | null>(null);
 
   // ১. সেশন না থাকলে সরাসরি লগইন পেজে পুশ
   useEffect(() => {
@@ -26,6 +27,31 @@ export default function DashboardShell({ children }: DashboardShellProps) {
       router.push("/login");
     }
   }, [status, router]);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
+    let ignore = false;
+
+    async function fetchArticleCount() {
+      try {
+        const res = await fetch("/api/articles?page=1&limit=1&status=all");
+        const result = await res.json();
+
+        if (!ignore && result.success) {
+          setArticleCount(result.meta?.total ?? 0);
+        }
+      } catch (error) {
+        console.error("Failed to load article count:", error);
+      }
+    }
+
+    fetchArticleCount();
+
+    return () => {
+      ignore = true;
+    };
+  }, [status]);
 
   // ২. নিউজ পোর্টাল রোল-ভিত্তিক নেভিগেশন ফিল্টারিং
   const navItems = useMemo(() => {
@@ -37,12 +63,16 @@ export default function DashboardShell({ children }: DashboardShellProps) {
     // কারেন্ট পাথের উপর ভিত্তি করে active স্টেট ম্যাপ করা
     return items.map((item: NavConfigItem) => ({
       ...item,
+      badge:
+        item.href === "/admin/articles" && articleCount !== null
+          ? String(articleCount)
+          : item.badge,
       active:
         item.href === "/admin/dashboard"
           ? pathname === "/admin/dashboard"
           : pathname?.startsWith(item.href),
     }));
-  }, [role, pathname]);
+  }, [role, pathname, articleCount]);
 
   // লোডিং স্টেটে ফুল স্ক্রিন ব্ল্যাংক বা আপনার কাস্টম স্পিনার দেখাতে পারেন
   if (status === "loading") {

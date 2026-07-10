@@ -49,7 +49,7 @@ export default function Header({ session, onMenuClick }: HeaderProps) {
           <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-destructive rounded-full border border-background"></span>
         </div>
 
-        <div className="h-6 w-[1px] bg-border"></div>
+        <div className="h-6 w-px bg-border"></div>
 
         {/* ইউজার অ্যাকশন ড্রপডাউন মেনু */}
         <div className="relative">
@@ -60,7 +60,7 @@ export default function Header({ session, onMenuClick }: HeaderProps) {
             <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center font-serif text-xs uppercase">
               {displayName.substring(0, 2)}
             </div>
-            <div className="flex flex-col text-left leading-tight hidden sm:flex">
+            <div className="flex flex-col text-left leading-tight sm:flex">
               <span className="text-xs font-semibold text-foreground">
                 {displayName}
               </span>

@@ -1,5 +1,10 @@
+import ArticleListTable from "@/components/admin/ArticleListTable";
 import React from "react";
 
 export default function page() {
-  return <div>page</div>;
+  return (
+    <div>
+      <ArticleListTable />
+    </div>
+  );
 }

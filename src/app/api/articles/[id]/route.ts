@@ -8,6 +8,43 @@ import Article from "@/Model/Article";
 // Ensure full Node.js environment to prevent any Edge runtime execution issues
 export const runtime = "nodejs";
 
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+
+    await connectDB();
+
+    const article = await Article.findById(id)
+      .populate("category", "name slug")
+      .populate("author", "name image")
+      .lean();
+
+    if (!article) {
+      return NextResponse.json(
+        { success: false, message: "Article not found." },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json(
+      { success: true, data: article },
+      { status: 200 },
+    );
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to load article.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
 /**
  * PUT /api/articles/[id]
  * সুরক্ষিত আর্টিকেল আপডেট এপিআই (WRITER, EDITOR, ADMIN)
@@ -15,11 +52,11 @@ export const runtime = "nodejs";
  */
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
-    const { id } = params;
+    const { id } = await params;
 
     // 1. Authentication Check
     if (!session || !session.user) {

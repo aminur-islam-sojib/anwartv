@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Edit, Eye, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface IArticleRow {
   _id: string;
@@ -120,14 +120,12 @@ export default function ArticleListTable() {
                     >
                       <Edit className="h-4 w-4" />
                     </Link>
-                    <a
-                      href={`/news/${article.slug}`}
-                      target="_blank"
-                      rel="noreferrer"
+                    <Link
+                      href={`/admin/articles/${article._id}`}
                       className="inline-flex p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                     >
                       <Eye className="h-4 w-4" />
-                    </a>
+                    </Link>
                   </td>
                 </tr>
               ))

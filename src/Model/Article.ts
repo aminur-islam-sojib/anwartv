@@ -136,14 +136,13 @@ articleSchema.index({ title: "text", content: "text" });
 articleSchema.index({ category: 1, publishedAt: -1 });
 
 // Auto-calculate read time before saving (approx. 200 words/min)
-articleSchema.pre("save", function (next) {
+articleSchema.pre("save", async function (this: any) {
   if (this.isModified("content")) {
-    const plainText = this.content.replace(/<[^>]*>/g, " "); // strip HTML tags
+    const plainText = this.content.replace(/<[^>]*>/g, " ");
     const wordCount = plainText.trim().split(/\s+/).filter(Boolean).length;
     this.readTime = Math.max(1, Math.ceil(wordCount / 200));
   }
 
-  // Auto-set publishedAt when status changes to published
   if (
     this.isModified("status") &&
     this.status === "published" &&
@@ -151,8 +150,6 @@ articleSchema.pre("save", function (next) {
   ) {
     this.publishedAt = new Date();
   }
-
-  next();
 });
 
 const Article: Model<IArticle> =

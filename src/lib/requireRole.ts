@@ -22,7 +22,9 @@ export async function requireRole(
     };
   }
 
-  if (!allowedRoles.includes(session.user.role)) {
+  const sessionRole = session.user?.role as Role | undefined;
+
+  if (!sessionRole || !allowedRoles.includes(sessionRole)) {
     return {
       session,
       error: Response.json(

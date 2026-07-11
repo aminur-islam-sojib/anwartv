@@ -1,3 +1,4 @@
+import HomePage from "@/components/Home/Home";
 import Header from "@/components/layout/header";
 import Image from "next/image";
 
@@ -6,7 +7,7 @@ export default function Home() {
     <div>
       <main>
         <Header />
-        <h1>Hi</h1>
+        <HomePage />
       </main>
     </div>
   );

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { Search, User, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
+import { getDashboardPath } from "@/lib/dashboardRoutes";
 
 export default function Header() {
   const { data: session } = useSession();
@@ -102,7 +103,7 @@ export default function Header() {
                       পদবি: {(session.user as any).role || "রাইটার"}
                     </div>
                     <Link
-                      href="/admin/dashboard"
+                      href={getDashboardPath((session.user as any)?.role)}
                       onClick={() => setIsProfileOpen(false)}
                       className="flex items-center px-4 py-2 text-sm hover:bg-slate-50 transition-colors"
                     >

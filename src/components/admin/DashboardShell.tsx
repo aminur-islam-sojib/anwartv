@@ -68,9 +68,11 @@ export default function DashboardShell({ children }: DashboardShellProps) {
           ? String(articleCount)
           : item.badge,
       active:
-        item.href === "/admin/dashboard"
-          ? pathname === "/admin/dashboard"
-          : pathname?.startsWith(item.href),
+        item.href === "/admin/dashboard" ||
+        item.href === "/editor" ||
+        item.href === "/write"
+          ? pathname === item.href
+          : pathname?.startsWith(item.href.split("?")[0]),
     }));
   }, [role, pathname, articleCount]);
 

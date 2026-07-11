@@ -36,12 +36,18 @@ export const NAV_CONFIG = {
       href: "/admin/users",
       group: "সিস্টেম",
     },
+    {
+      label: "হোমপেজ কিউরেটর",
+      icon: Users,
+      href: "/admin/homepage-curator",
+      group: "ওভারভিউ",
+    },
   ],
   [ROLES.EDITOR]: [
     {
       label: "ড্যাশবোর্ড",
       icon: LayoutDashboard,
-      href: "/admin/dashboard",
+      href: "/editor",
       group: "ওভারভিউ",
     },
     {
@@ -62,7 +68,7 @@ export const NAV_CONFIG = {
     {
       label: "ড্যাশবোর্ড",
       icon: LayoutDashboard,
-      href: "/admin/dashboard",
+      href: "/write",
       group: "ওভারভিউ",
     },
     {

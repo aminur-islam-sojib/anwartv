@@ -13,6 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const session = await auth();
     const { id } = await params;
 
     await connectDB();
@@ -29,10 +30,25 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(
-      { success: true, data: article },
-      { status: 200 },
+    const role = (session?.user as any)?.role as string | undefined;
+    const sessionUserId = (session?.user as any)?.id as string | undefined;
+    const isOwner = Boolean(
+      sessionUserId && article.author?.toString() === sessionUserId,
     );
+
+    if (
+      article.status !== "published" &&
+      role !== ROLES.ADMIN &&
+      role !== ROLES.EDITOR &&
+      !(role === ROLES.WRITER && isOwner)
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Article not found." },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ success: true, data: article }, { status: 200 });
   } catch (error: unknown) {
     return NextResponse.json(
       {
@@ -66,8 +82,15 @@ export async function PUT(
       );
     }
 
-    const userRole = (session.user as any).role;
-    const userId = (session.user as any).id;
+    const userRole = (session.user as any).role as string | undefined;
+    const userId = (session.user as any).id as string | undefined;
+
+    if (![ROLES.ADMIN, ROLES.EDITOR, ROLES.WRITER].includes(userRole as any)) {
+      return NextResponse.json(
+        { success: false, message: "এই অ্যাকশনটি নেওয়ার অনুমতি আপনার নেই।" },
+        { status: 403 },
+      );
+    }
 
     const body = await req.json();
     const {
@@ -143,7 +166,7 @@ export async function PUT(
     if (status) article.status = status;
 
     // Administrative flags protection (Only Admins and Editors can toggle Breaking/Featured)
-    if ([ROLES.ADMIN, ROLES.EDITOR].includes(userRole)) {
+    if ([ROLES.ADMIN, ROLES.EDITOR].includes(userRole as any)) {
       if (isBreaking !== undefined) article.isBreaking = isBreaking;
       if (isFeatured !== undefined) article.isFeatured = isFeatured;
     }

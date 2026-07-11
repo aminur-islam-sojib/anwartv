@@ -16,6 +16,7 @@ export const runtime = "nodejs";
  */
 export async function GET(req: Request) {
   try {
+    const session = await auth();
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.max(
@@ -24,12 +25,33 @@ export async function GET(req: Request) {
     );
     const categorySlug = searchParams.get("category");
     const status = searchParams.get("status") || "published";
+    const role = (session?.user as any)?.role as string | undefined;
+    const userId = (session?.user as any)?.id as string | undefined;
 
     await connectDB();
 
     let query: any = {};
-    if (status !== "all") {
-      query.status = status;
+    if (status === "all") {
+      if (role === ROLES.ADMIN || role === ROLES.EDITOR) {
+        query.status = {
+          $in: ["draft", "in_review", "scheduled", "published", "archived"],
+        };
+      } else if (role === ROLES.WRITER) {
+        query.author = userId;
+      } else {
+        query.status = "published";
+      }
+    } else if (status === "published") {
+      query.status = "published";
+    } else {
+      if (role === ROLES.ADMIN || role === ROLES.EDITOR) {
+        query.status = status;
+      } else if (role === ROLES.WRITER) {
+        query.status = status;
+        query.author = userId;
+      } else {
+        query.status = "published";
+      }
     }
 
     if (categorySlug) {
@@ -87,21 +109,22 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await auth();
+    const userRole = (session?.user as any)?.role as string | undefined;
+    const userId = (session?.user as any)?.id as string | undefined;
 
-    const isTestRequest = process.env.NODE_ENV !== "production";
-
-    // Session validation protection
-    if (!session || !session.user) {
-      if (!isTestRequest) {
-        return NextResponse.json(
-          { success: false, message: "অনুগ্রহ করে প্রথমে লগইন করুন।" },
-          { status: 401 },
-        );
-      }
+    if (!session?.user || !userRole || !userId) {
+      return NextResponse.json(
+        { success: false, message: "অনুগ্রহ করে প্রথমে লগইন করুন।" },
+        { status: 401 },
+      );
     }
 
-    const userRole = (session?.user as any)?.role || ROLES.ADMIN;
-    const userId = (session?.user as any)?.id || "64f000000000000000000000";
+    if (![ROLES.ADMIN, ROLES.EDITOR, ROLES.WRITER].includes(userRole as any)) {
+      return NextResponse.json(
+        { success: false, message: "এই অ্যাকশনটি নেওয়ার অনুমতি আপনার নেই।" },
+        { status: 403 },
+      );
+    }
 
     const body = await req.json();
     const {
@@ -172,10 +195,10 @@ export async function POST(req: Request) {
       seo: seo || {},
       author: userId,
       status,
-      isBreaking: [ROLES.ADMIN, ROLES.EDITOR].includes(userRole)
+      isBreaking: [ROLES.ADMIN, ROLES.EDITOR].includes(userRole as any)
         ? isBreaking || false
         : false,
-      isFeatured: [ROLES.ADMIN, ROLES.EDITOR].includes(userRole)
+      isFeatured: [ROLES.ADMIN, ROLES.EDITOR].includes(userRole as any)
         ? isFeatured || false
         : false,
       editHistory: [

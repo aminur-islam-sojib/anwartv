@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Mail, Lock, Loader2 } from "lucide-react";
+import { getDashboardPath } from "@/lib/dashboardRoutes";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,8 +39,9 @@ export default function LoginPage() {
         throw new Error("ভুল ইমেইল অথবা পাসওয়ার্ড! আবার চেষ্টা করুন।");
       }
 
-      // সফলভাবে লগইন হলে বাংলা ড্যাশবোর্ডে রিডাইরেক্ট
-      router.push("/admin/dashboard");
+      const session = await getSession();
+
+      router.push(getDashboardPath(session?.user?.role));
       router.refresh();
     } catch (err: any) {
       setError(err.message || "লগইন করার সময় একটি সমস্যা হয়েছে।");

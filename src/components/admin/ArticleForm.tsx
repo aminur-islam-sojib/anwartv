@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import RichTextEditor from "./RichTextEditor";
 import {
   Loader2,
@@ -14,6 +15,7 @@ import {
   FileText,
   Settings,
 } from "lucide-react";
+import { getDashboardPath } from "@/lib/dashboardRoutes";
 
 interface ICatalogue {
   _id: string;
@@ -27,6 +29,7 @@ interface ArticleFormProps {
 
 export default function ArticleForm({ initialData }: ArticleFormProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [categories, setCategories] = useState<ICatalogue[]>([]);
@@ -177,7 +180,7 @@ export default function ArticleForm({ initialData }: ArticleFormProps) {
           ? "আর্টিকেলটি সফলভাবে আপডেট করা হয়েছে!"
           : "নতুন সংবাদ সফলভাবে তৈরি হয়েছে!",
       );
-      router.push("/admin/dashboard");
+      router.push(getDashboardPath(session?.user?.role));
       router.refresh();
     } catch (err: any) {
       setError(err.message || "একটি কারিগরি ত্রুটি ঘটেছে।");

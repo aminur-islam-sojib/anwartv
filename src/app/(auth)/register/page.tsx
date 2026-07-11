@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, Loader2 } from "lucide-react";
+import { getDashboardPath } from "@/lib/dashboardRoutes";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -56,8 +57,9 @@ export default function RegisterPage() {
         );
       }
 
-      // 3. Perfect clean redirection to Bangla admin dashboard
-      router.push("/admin/dashboard");
+      const session = await getSession();
+
+      router.push(getDashboardPath(session?.user?.role));
       router.refresh();
     } catch (err: any) {
       setError(err.message || "একটি অজানা ত্রুটি ঘটেছে।");

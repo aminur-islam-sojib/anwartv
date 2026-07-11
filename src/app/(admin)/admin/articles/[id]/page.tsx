@@ -13,10 +13,13 @@ import {
   Star,
 } from "lucide-react";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
 import Article from "@/Model/Article";
 import Category from "@/Model/Category";
 import User from "@/Model/User";
 import { connectDB } from "@/lib/db";
+import { ROLES } from "@/constant/roles";
+import { getDashboardPath } from "@/lib/dashboardRoutes";
 
 type ArticleDetailsPageProps = {
   params: Promise<{ id: string }>;
@@ -136,6 +139,7 @@ export default async function ArticleDetailsPage({
   params,
 }: ArticleDetailsPageProps) {
   const { id } = await params;
+  const session = await auth();
 
   await connectDB();
 
@@ -155,9 +159,26 @@ export default async function ArticleDetailsPage({
     notFound();
   }
 
-  const article = JSON.parse(
-    JSON.stringify(articleDocument),
-  ) as ArticleDetails;
+  const role = (session?.user as any)?.role as string | undefined;
+  const sessionUserId = (session?.user as any)?.id as string | undefined;
+  const articleAuthorId =
+    (articleDocument as any).author?._id?.toString?.() ||
+    (articleDocument as any).author?.toString?.();
+
+  if (
+    (articleDocument as any).status !== "published" &&
+    role !== ROLES.ADMIN &&
+    role !== ROLES.EDITOR &&
+    !(
+      role === ROLES.WRITER &&
+      sessionUserId &&
+      articleAuthorId === sessionUserId
+    )
+  ) {
+    notFound();
+  }
+
+  const article = JSON.parse(JSON.stringify(articleDocument)) as ArticleDetails;
 
   const statusClass = statusStyles[article.status] || statusStyles.draft;
   const coAuthors = article.coAuthors?.map(getName).join(", ");
@@ -169,7 +190,7 @@ export default async function ArticleDetailsPage({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-3">
           <Link
-            href="/admin/dashboard"
+            href={getDashboardPath((session?.user as any)?.role)}
             className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#cc0000]"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -256,9 +277,7 @@ export default async function ArticleDetailsPage({
           <section className="rounded-lg border border-slate-200 bg-white p-5">
             <div className="mb-4 flex items-center gap-2">
               <MessageSquareText className="h-5 w-5 text-[#cc0000]" />
-              <h2 className="text-lg font-bold text-slate-900">
-                Edit history
-              </h2>
+              <h2 className="text-lg font-bold text-slate-900">Edit history</h2>
             </div>
 
             {article.editHistory?.length ? (
@@ -294,16 +313,20 @@ export default async function ArticleDetailsPage({
           <section className="rounded-lg border border-slate-200 bg-white p-5">
             <div className="mb-3 flex items-center gap-2">
               <CalendarDays className="h-5 w-5 text-[#cc0000]" />
-              <h2 className="text-lg font-bold text-slate-900">
-                Publishing
-              </h2>
+              <h2 className="text-lg font-bold text-slate-900">Publishing</h2>
             </div>
             <dl>
               <DetailRow label="Category" value={getName(article.category)} />
               <DetailRow label="Author" value={getName(article.author)} />
               <DetailRow label="Co-authors" value={coAuthors} />
-              <DetailRow label="Created" value={formatDate(article.createdAt)} />
-              <DetailRow label="Updated" value={formatDate(article.updatedAt)} />
+              <DetailRow
+                label="Created"
+                value={formatDate(article.createdAt)}
+              />
+              <DetailRow
+                label="Updated"
+                value={formatDate(article.updatedAt)}
+              />
               <DetailRow
                 label="Published"
                 value={formatDate(article.publishedAt)}

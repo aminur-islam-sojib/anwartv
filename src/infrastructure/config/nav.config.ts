@@ -5,6 +5,8 @@ import {
   MessageSquare,
   Users,
   type LucideIcon,
+  SquarePen,
+  LayoutPanelLeft,
 } from "lucide-react";
 import { ROLES, type Role } from "@/constant/roles";
 
@@ -38,8 +40,14 @@ export const NAV_CONFIG = {
     },
     {
       label: "হোমপেজ কিউরেটর",
-      icon: Users,
+      icon: LayoutPanelLeft,
       href: "/admin/homepage-curator",
+      group: "ওভারভিউ",
+    },
+    {
+      label: "নতুন আর্টিকেল",
+      icon: SquarePen,
+      href: "/admin/new",
       group: "ওভারভিউ",
     },
   ],

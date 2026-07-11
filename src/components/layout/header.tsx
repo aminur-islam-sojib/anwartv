@@ -98,7 +98,7 @@ export default function Header() {
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 text-slate-800 border border-slate-200 z-50">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 text-slate-800 border border-slate-200 z-[999]">
                     <div className="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">
                       পদবি: {(session.user as any).role || "রাইটার"}
                     </div>
@@ -133,7 +133,7 @@ export default function Header() {
       </div>
 
       {/* লেয়ার ৩: ডাইনামিক নেভিগেশন বার (ডেস্কটপ এবং মোবাইল রেসপনসিভ) */}
-      <nav className="sticky top-0 z-40 bg-white shadow-sm border-b border-slate-200">
+      <nav className="sticky top-0 bg-white shadow-sm border-b border-slate-200">
         {/* ডেস্কটপ মেনু */}
         <div className="hidden md:flex max-w-7xl mx-auto px-4 justify-start items-center space-x-1 font-medium text-slate-700">
           {navItems.map((item) => (

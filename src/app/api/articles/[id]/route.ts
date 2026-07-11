@@ -1,12 +1,70 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
-import { ROLES } from "@/constant/roles";
+import { ROLES, type Role } from "@/constant/roles";
 import Category from "@/Model/Category";
 import Article from "@/Model/Article";
+import type { ArticleStatus } from "@/Model/Article";
+import { Types } from "mongoose";
 
 // Ensure full Node.js environment to prevent any Edge runtime execution issues
 export const runtime = "nodejs";
+
+type AuthUser = {
+  id?: string;
+  role?: string;
+};
+
+type ArticleUpdateBody = {
+  title?: string;
+  content?: string;
+  category?: string;
+  tags?: Array<string | Types.ObjectId>;
+  coverImage?: {
+    url: string;
+    alt?: string;
+    caption?: string;
+  };
+  seo?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    ogImage?: string;
+    keywords?: string[];
+  };
+  status?: ArticleStatus;
+  isBreaking?: boolean;
+  isFeatured?: boolean;
+  editNote?: string;
+};
+
+const editableRoles: Role[] = [ROLES.ADMIN, ROLES.EDITOR, ROLES.WRITER];
+const editorialRoles: Role[] = [ROLES.ADMIN, ROLES.EDITOR];
+const articleStatuses: ArticleStatus[] = [
+  "draft",
+  "in_review",
+  "scheduled",
+  "published",
+  "archived",
+];
+
+function isArticleStatus(value: string): value is ArticleStatus {
+  return articleStatuses.includes(value as ArticleStatus);
+}
+
+function getArticleLookup(id: string) {
+  return Types.ObjectId.isValid(id)
+    ? { $or: [{ _id: id }, { slug: id }] }
+    : { slug: id };
+}
+
+function getEntityId(value: unknown) {
+  if (!value) return undefined;
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && "_id" in value) {
+    return (value as { _id?: { toString?: () => string } })._id?.toString?.();
+  }
+  return (value as { toString?: () => string }).toString?.();
+}
 
 export async function GET(
   _req: Request,
@@ -18,7 +76,7 @@ export async function GET(
 
     await connectDB();
 
-    const article = await Article.findById(id)
+    const article = await Article.findOne(getArticleLookup(id))
       .populate("category", "name slug")
       .populate("author", "name image")
       .lean();
@@ -30,10 +88,11 @@ export async function GET(
       );
     }
 
-    const role = (session?.user as any)?.role as string | undefined;
-    const sessionUserId = (session?.user as any)?.id as string | undefined;
+    const sessionUser = session?.user as AuthUser | undefined;
+    const role = sessionUser?.role;
+    const sessionUserId = sessionUser?.id;
     const isOwner = Boolean(
-      sessionUserId && article.author?.toString() === sessionUserId,
+      sessionUserId && getEntityId(article.author) === sessionUserId,
     );
 
     if (
@@ -82,17 +141,25 @@ export async function PUT(
       );
     }
 
-    const userRole = (session.user as any).role as string | undefined;
-    const userId = (session.user as any).id as string | undefined;
+    const sessionUser = session.user as AuthUser;
+    const userRole = sessionUser.role as Role | undefined;
+    const userId = sessionUser.id;
 
-    if (![ROLES.ADMIN, ROLES.EDITOR, ROLES.WRITER].includes(userRole as any)) {
+    if (!userRole || !editableRoles.includes(userRole)) {
       return NextResponse.json(
         { success: false, message: "এই অ্যাকশনটি নেওয়ার অনুমতি আপনার নেই।" },
         { status: 403 },
       );
     }
 
-    const body = await req.json();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: "Invalid authenticated user." },
+        { status: 401 },
+      );
+    }
+
+    const body = (await req.json()) as ArticleUpdateBody;
     const {
       title,
       content,
@@ -109,7 +176,7 @@ export async function PUT(
     await connectDB();
 
     // 2. Fetch target article cleanly
-    const article = await Article.findById(id);
+    const article = await Article.findOne(getArticleLookup(id));
     if (!article) {
       return NextResponse.json(
         { success: false, message: "আর্টিকেলটি খুঁজে পাওয়া যায়নি।" },
@@ -142,8 +209,22 @@ export async function PUT(
       );
     }
 
+    if (status && !isArticleStatus(status)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid article status." },
+        { status: 400 },
+      );
+    }
+
     // 4. Validate Category change if provided
     if (category && category !== article.category.toString()) {
+      if (!Types.ObjectId.isValid(category)) {
+        return NextResponse.json(
+          { success: false, message: "Invalid category id." },
+          { status: 400 },
+        );
+      }
+
       const categoryExists = await Category.findById(category);
       if (!categoryExists) {
         return NextResponse.json(
@@ -154,26 +235,35 @@ export async function PUT(
           { status: 400 },
         );
       }
-      article.category = category;
+      article.category = new Types.ObjectId(category);
     }
 
     // 5. Update permitted fields dynamically
     if (title) article.title = title;
     if (content) article.content = content;
-    if (tags) article.tags = tags;
+    if (tags) {
+      if (tags.some((tag) => !Types.ObjectId.isValid(tag.toString()))) {
+        return NextResponse.json(
+          { success: false, message: "Invalid tag id." },
+          { status: 400 },
+        );
+      }
+
+      article.tags = tags.map((tag) => new Types.ObjectId(tag.toString()));
+    }
     if (coverImage) article.coverImage = coverImage;
     if (seo) article.seo = seo;
     if (status) article.status = status;
 
     // Administrative flags protection (Only Admins and Editors can toggle Breaking/Featured)
-    if ([ROLES.ADMIN, ROLES.EDITOR].includes(userRole as any)) {
+    if (editorialRoles.includes(userRole)) {
       if (isBreaking !== undefined) article.isBreaking = isBreaking;
       if (isFeatured !== undefined) article.isFeatured = isFeatured;
     }
 
     // 6. Track modifications and push to editHistory ecosystem
     const historyEntry = {
-      editedBy: userId,
+      editedBy: new Types.ObjectId(userId),
       editedAt: new Date(),
       note:
         editNote ||
@@ -193,9 +283,13 @@ export async function PUT(
       },
       { status: 200 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { success: false, message: error.message },
+      {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to update article.",
+      },
       { status: 500 },
     );
   }

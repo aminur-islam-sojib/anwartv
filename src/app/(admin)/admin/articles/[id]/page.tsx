@@ -128,7 +128,7 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
       <dt className="text-xs font-semibold uppercase text-slate-500">
         {label}
       </dt>
-      <dd className="mt-1 break-words text-sm font-medium text-slate-800">
+      <dd className="mt-1 wrap-break-word text-sm font-medium text-slate-800">
         {value || "Not set"}
       </dd>
     </div>
@@ -139,6 +139,7 @@ export default async function ArticleDetailsPage({
   params,
 }: ArticleDetailsPageProps) {
   const { id } = await params;
+  console.log;
   const session = await auth();
 
   await connectDB();
@@ -147,7 +148,9 @@ export default async function ArticleDetailsPage({
   void Category;
   void User;
 
-  const articleDocument = await Article.findById(id)
+  const articleDocument = await Article.findOne({
+    $or: [{ _id: id }, { slug: id }],
+  })
     .populate("category", "name slug")
     .populate("author", "name email")
     .populate("coAuthors", "name email")
@@ -245,7 +248,7 @@ export default async function ArticleDetailsPage({
         <div className="space-y-6">
           <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             {article.coverImage?.url && (
-              <div className="relative h-[220px] border-b border-slate-200 bg-slate-100 sm:h-[320px] lg:h-[420px]">
+              <div className="relative h-55 border-b border-slate-200 bg-slate-100 sm:h-80 lg:h-105">
                 <Image
                   src={article.coverImage.url}
                   alt={article.coverImage.alt || article.title}

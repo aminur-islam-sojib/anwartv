@@ -1,9 +1,7 @@
 import ArticleForm from "@/components/admin/ArticleForm";
-import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import Article from "@/Model/Article";
 import Category from "@/Model/Category";
-import { ROLES } from "@/constant/roles";
 import { notFound } from "next/navigation";
 
 type EditArticlePageProps = {
@@ -14,7 +12,7 @@ export default async function EditArticlePage({
   params,
 }: EditArticlePageProps) {
   const { id } = await params;
-  const session = await auth();
+  console.log("id is ", id);
 
   await connectDB();
 
@@ -26,20 +24,6 @@ export default async function EditArticlePage({
     .lean();
 
   if (!article) {
-    notFound();
-  }
-
-  const role = (session?.user as any)?.role as string | undefined;
-  const sessionUserId = (session?.user as any)?.id as string | undefined;
-  const articleAuthorId =
-    (article as any).author?._id?.toString?.() ||
-    (article as any).author?.toString?.();
-
-  if (
-    role === ROLES.WRITER &&
-    sessionUserId &&
-    articleAuthorId !== sessionUserId
-  ) {
     notFound();
   }
 

@@ -16,6 +16,7 @@ import {
   Settings,
 } from "lucide-react";
 import { getDashboardPath } from "@/lib/dashboardRoutes";
+import { ROLES } from "@/constant/roles";
 
 interface ICatalogue {
   _id: string;
@@ -61,6 +62,7 @@ export default function ArticleForm({ initialData }: ArticleFormProps) {
     initialData?.isFeatured || false,
   );
   const [editNote, setEditNote] = useState("");
+  const isWriter = session?.user?.role === ROLES.WRITER;
 
   // Fetch categories
   useEffect(() => {
@@ -144,12 +146,15 @@ export default function ArticleForm({ initialData }: ArticleFormProps) {
       return;
     }
 
+    const payloadStatus =
+      isWriter && status === "published" ? "in_review" : status;
+
     const payload = {
       title,
       content,
       category,
       coverImage,
-      status,
+      status: payloadStatus,
       isBreaking,
       isFeatured,
       author, // Optional Field
@@ -343,7 +348,9 @@ export default function ArticleForm({ initialData }: ArticleFormProps) {
             >
               <option value="draft">ড্রাফট (Draft)</option>
               <option value="in_review">পর্যালোচনা (In Review)</option>
-              <option value="published">পাবলিশ (Publish)</option>
+              <option value="published" disabled={isWriter}>
+                পাবলিশ (Publish)
+              </option>
             </select>
           </div>
 
@@ -388,6 +395,7 @@ export default function ArticleForm({ initialData }: ArticleFormProps) {
                 type="checkbox"
                 className="h-4 w-4 rounded-md text-[#cc0000] focus:ring-[#cc0000] border-slate-300 dark:border-zinc-700 dark:bg-zinc-800 transition-colors"
                 checked={isBreaking}
+                disabled={isWriter}
                 onChange={(e) => setIsBreaking(e.target.checked)}
               />
               <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-zinc-100 transition-colors">
@@ -400,6 +408,7 @@ export default function ArticleForm({ initialData }: ArticleFormProps) {
                 type="checkbox"
                 className="h-4 w-4 rounded-md text-[#cc0000] focus:ring-[#cc0000] border-slate-300 dark:border-zinc-700 dark:bg-zinc-800 transition-colors"
                 checked={isFeatured}
+                disabled={isWriter}
                 onChange={(e) => setIsFeatured(e.target.checked)}
               />
               <span className="text-sm font-semibold text-slate-700 dark:text-zinc-300 group-hover:text-slate-900 dark:group-hover:text-zinc-100 transition-colors">

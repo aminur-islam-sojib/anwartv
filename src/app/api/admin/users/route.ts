@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { Types } from "mongoose";
 import { ROLES, type Role } from "@/constant/roles";
 import Article from "@/Model/Article";
-import User, { type AccountStatus, type IUser } from "@/Model/User";
+import User, { type AccountStatus } from "@/Model/User";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 
@@ -36,6 +36,14 @@ type UserListQuery = {
 
 function isAdmin(role?: string) {
   return role === ROLES.ADMIN;
+}
+
+function isRole(value: string): value is Role {
+  return VALID_ROLES.includes(value as Role);
+}
+
+function isAccountStatus(value: string): value is AccountStatus {
+  return VALID_STATUSES.includes(value as AccountStatus);
 }
 
 function normalizeStatus(user: PublicUser): AccountStatus {
@@ -90,15 +98,11 @@ export async function GET(req: Request) {
 
     const query: UserListQuery = {};
 
-    if (role && role !== "all" && VALID_ROLES.includes(role as Role)) {
+    if (role && role !== "all" && isRole(role)) {
       query.role = role;
     }
 
-    if (
-      status &&
-      status !== "all" &&
-      VALID_STATUSES.includes(status as AccountStatus)
-    ) {
+    if (status && status !== "all" && isAccountStatus(status)) {
       query.accountStatus = status;
     }
 

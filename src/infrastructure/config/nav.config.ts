@@ -7,6 +7,7 @@ import {
   type LucideIcon,
   SquarePen,
   LayoutPanelLeft,
+  FolderTree,
 } from "lucide-react";
 import { ROLES, type Role } from "@/constant/roles";
 
@@ -48,6 +49,12 @@ export const NAV_CONFIG = {
       label: "নতুন আর্টিকেল",
       icon: SquarePen,
       href: "/admin/new",
+      group: "ওভারভিউ",
+    },
+    {
+      label: "ক্যাটাগরি ম্যানেজমেন্ট",
+      icon: FolderTree,
+      href: "/admin/categories",
       group: "ওভারভিউ",
     },
   ],

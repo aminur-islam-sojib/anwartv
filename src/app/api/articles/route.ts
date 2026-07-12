@@ -3,10 +3,12 @@ import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { ROLES } from "@/constant/roles";
 import slugify from "slugify";
+import { resolveTags } from "@/lib/resolveTags";
 
 // Force-register dependent Mongoose models with verified lowercase folder convention
 import Category from "@/Model/Category";
 import Article from "@/Model/Article";
+import Tag from "@/Model/Tag";
 
 // Ensure full Node.js environment execution
 export const runtime = "nodejs";
@@ -77,6 +79,7 @@ export async function GET(req: Request) {
         .limit(limit)
         .populate("category", "name slug")
         .populate("author", "name image")
+        .populate("tags", "name slug")
         .lean(),
       Article.countDocuments(query),
     ]);
@@ -121,7 +124,7 @@ export async function POST(req: Request) {
 
     if (![ROLES.ADMIN, ROLES.EDITOR, ROLES.WRITER].includes(userRole as any)) {
       return NextResponse.json(
-        { success: false, message: "এই অ্যাকশনটি নেওয়ার অনুমতি আপনার নেই।" },
+        { success: false, message: "এই অ্যাকশনটি নেওয়ার অনুমতি আপনার নেই।" },
         { status: 403 },
       );
     }
@@ -144,7 +147,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "শিরোনাম, মূল বিষয়বস্তু এবং ক্যাটাগরি প্রদান করা আবশ্যিক।",
+          message: "শিরোনাম, মূল বিষয়বস্তু এবং ক্যাটাগরি প্রদান করা আবশ্যিক।",
         },
         { status: 400 },
       );
@@ -185,12 +188,16 @@ export async function POST(req: Request) {
       );
     }
 
+    // Resolve raw tag name strings (e.g. ["cricket", "dhaka"]) into real Tag ObjectIds,
+    // creating any tags that don't exist yet.
+    const tagIds = await resolveTags(tags || []);
+
     const newArticle = new Article({
       title,
       slug: generatedSlug,
       content,
       category,
-      tags: tags || [],
+      tags: tagIds,
       coverImage: coverImage || { url: "/default-news.jpg" },
       seo: seo || {},
       author: userId,
@@ -205,7 +212,7 @@ export async function POST(req: Request) {
         {
           editedBy: userId,
           editedAt: new Date(),
-          note: "আর্টিকেলটি প্রথমবার তৈরি করা হয়েছে।",
+          note: "আর্টিকেলটি প্রথমবার তৈরি করা হয়েছে।",
         },
       ],
     });
@@ -217,8 +224,8 @@ export async function POST(req: Request) {
         success: true,
         message:
           status === "published"
-            ? "সংবাদটি সফলভাবে প্রকাশিত হয়েছে।"
-            : "সংবাদটি ড্রাফট হিসেবে সংরক্ষিত হয়েছে।",
+            ? "সংবাদটি সফলভাবে প্রকাশিত হয়েছে।"
+            : "সংবাদটি ড্রাফট হিসেবে সংরক্ষিত হয়েছে।",
         data: { id: newArticle._id, slug: newArticle.slug },
       },
       { status: 201 },

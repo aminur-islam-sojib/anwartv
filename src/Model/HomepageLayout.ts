@@ -1,4 +1,5 @@
 // models/HomepageLayout.ts
+import "@/Model/Article";
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IHomepageLayout extends Document {

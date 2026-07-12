@@ -34,10 +34,94 @@ interface LayoutSlots {
   sports_featured: Article | null;
 }
 
+type ObjectLike = Record<string, unknown>;
+
+const SLOT_KEYS = [
+  "hero_main",
+  "hero_sidebar_1",
+  "hero_sidebar_2",
+  "politics_featured",
+  "sports_featured",
+] as const;
+
+function isObjectLike(value: unknown): value is ObjectLike {
+  return typeof value === "object" && value !== null;
+}
+
+function toSafeString(value: unknown, fallback = ""): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (!value) return fallback;
+
+  if (isObjectLike(value)) {
+    const stringable = value as { toString?: () => string };
+    const stringValue = stringable.toString?.();
+
+    if (stringValue && stringValue !== "[object Object]") {
+      return stringValue;
+    }
+  }
+
+  return fallback;
+}
+
 function getCategoryLabel(category?: Article["category"]) {
-  if (!category) return "অনির্ধারিত";
+  const fallback = "অনির্ধারিত";
+
+  if (!category) return fallback;
   if (typeof category === "string") return category;
-  return category.name || category.slug || category._id || "অনির্ধারিত";
+
+  return (
+    toSafeString(category.name) ||
+    toSafeString(category.slug) ||
+    toSafeString(category._id) ||
+    fallback
+  );
+}
+
+function normalizeArticle(value: unknown): Article | null {
+  if (!isObjectLike(value)) return null;
+
+  const article = value as ObjectLike;
+  const category = isObjectLike(article.category)
+    ? "name" in article.category ||
+      "slug" in article.category ||
+      "_id" in article.category
+      ? {
+          _id: toSafeString(article.category._id),
+          name: toSafeString(article.category.name) || undefined,
+          slug: toSafeString(article.category.slug) || undefined,
+        }
+      : toSafeString(article.category)
+    : toSafeString(article.category);
+  const coverImage = isObjectLike(article.coverImage)
+    ? {
+        url: toSafeString(article.coverImage.url),
+        blurHash: toSafeString(article.coverImage.blurHash) || undefined,
+      }
+    : undefined;
+
+  return {
+    _id: toSafeString(article._id),
+    title: toSafeString(article.title),
+    category,
+    slug: toSafeString(article.slug),
+    excerpt: toSafeString(article.excerpt) || undefined,
+    coverImage: coverImage?.url ? coverImage : undefined,
+    author: toSafeString(article.author) || undefined,
+    createdAt: toSafeString(article.createdAt),
+  };
+}
+
+function normalizeSlots(value: unknown): LayoutSlots | null {
+  if (!isObjectLike(value)) return null;
+
+  return SLOT_KEYS.reduce((slots, key) => {
+    slots[key] = normalizeArticle(value[key]);
+    return slots;
+  }, {} as LayoutSlots);
 }
 
 // Highly optimized caching data fetch engine
@@ -46,7 +130,7 @@ async function getCachedHomepageSlots(): Promise<LayoutSlots | null> {
     // Read directly out of Upstash RAM via stateless HTTP REST
     const cachedData = await redis.get("cached_homepage_layout");
     if (cachedData) {
-      return cachedData as LayoutSlots;
+      return normalizeSlots(cachedData);
     }
   } catch (error) {
     console.error(
@@ -66,7 +150,7 @@ async function getCachedHomepageSlots(): Promise<LayoutSlots | null> {
       .populate("slots.sports_featured")
       .lean();
 
-    return (dbData?.slots as unknown as LayoutSlots) || null;
+    return normalizeSlots(dbData?.slots);
   } catch (dbError) {
     console.error(
       "Critical System Defect: Database fallback crashed:",

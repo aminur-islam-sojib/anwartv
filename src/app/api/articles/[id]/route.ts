@@ -5,6 +5,7 @@ import { ROLES, type Role } from "@/constant/roles";
 import Category from "@/Model/Category";
 import Article from "@/Model/Article";
 import type { ArticleStatus } from "@/Model/Article";
+import { resolveTags } from "@/lib/resolveTags";
 import { Types } from "mongoose";
 
 // Ensure full Node.js environment to prevent any Edge runtime execution issues
@@ -19,7 +20,7 @@ type ArticleUpdateBody = {
   title?: string;
   content?: string;
   category?: string;
-  tags?: Array<string | Types.ObjectId>;
+  tags?: string[];
   coverImage?: {
     url: string;
     alt?: string;
@@ -79,6 +80,7 @@ export async function GET(
     const article = await Article.findOne(getArticleLookup(id))
       .populate("category", "name slug")
       .populate("author", "name image")
+      .populate("tags", "name slug")
       .lean();
 
     if (!article) {
@@ -147,7 +149,7 @@ export async function PUT(
 
     if (!userRole || !editableRoles.includes(userRole)) {
       return NextResponse.json(
-        { success: false, message: "এই অ্যাকশনটি নেওয়ার অনুমতি আপনার নেই।" },
+        { success: false, message: "এই অ্যাকশনটি নেওয়ার অনুমতি আপনার নেই।" },
         { status: 403 },
       );
     }
@@ -179,7 +181,7 @@ export async function PUT(
     const article = await Article.findOne(getArticleLookup(id));
     if (!article) {
       return NextResponse.json(
-        { success: false, message: "আর্টিকেলটি খুঁজে পাওয়া যায়নি।" },
+        { success: false, message: "আর্টিকেলটি খুঁজে পাওয়া যায়নি।" },
         { status: 404 },
       );
     }
@@ -191,7 +193,7 @@ export async function PUT(
         {
           success: false,
           message:
-            "আপনার নিজের আর্টিকেল ছাড়া অন্য কারো আর্টিকেল সম্পাদনা করার অনুমতি নেই।",
+            "আপনার নিজের আর্টিকেল ছাড়া অন্য কারো আর্টিকেল সম্পাদনা করার অনুমতি নেই।",
         },
         { status: 403 },
       );
@@ -242,14 +244,9 @@ export async function PUT(
     if (title) article.title = title;
     if (content) article.content = content;
     if (tags) {
-      if (tags.some((tag) => !Types.ObjectId.isValid(tag.toString()))) {
-        return NextResponse.json(
-          { success: false, message: "Invalid tag id." },
-          { status: 400 },
-        );
-      }
-
-      article.tags = tags.map((tag) => new Types.ObjectId(tag.toString()));
+      // tags arrives as raw name strings (e.g. ["cricket", "dhaka"]) from the form,
+      // same contract as the create (POST) route — resolve/create Tag docs and store their ObjectIds.
+      article.tags = await resolveTags(tags);
     }
     if (coverImage) article.coverImage = coverImage;
     if (seo) article.seo = seo;
@@ -267,7 +264,7 @@ export async function PUT(
       editedAt: new Date(),
       note:
         editNote ||
-        `${userRole === ROLES.WRITER ? "রাইটার" : "এডিটর"} কর্তৃক আর্টিকেলটি সংশোধন করা হয়েছে।`,
+        `${userRole === ROLES.WRITER ? "রাইটার" : "এডিটর"} কর্তৃক আর্টিকেলটি সংশোধন করা হয়েছে।`,
     };
 
     article.editHistory.push(historyEntry);
@@ -278,7 +275,7 @@ export async function PUT(
     return NextResponse.json(
       {
         success: true,
-        message: "আর্টিকেলটি সফলভাবে আপডেট করা হয়েছে।",
+        message: "আর্টিকেলটি সফলভাবে আপডেট করা হয়েছে।",
         data: { id: article._id, slug: article.slug, status: article.status },
       },
       { status: 200 },

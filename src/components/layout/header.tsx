@@ -98,7 +98,7 @@ export default function Header() {
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 text-slate-800 border border-slate-200 z-[999]">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 text-slate-800 border border-slate-200 z-999">
                     <div className="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">
                       পদবি: {(session.user as any).role || "রাইটার"}
                     </div>

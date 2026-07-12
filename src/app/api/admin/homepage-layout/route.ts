@@ -1,9 +1,10 @@
-// app/api/admin/homepage-layout/route.ts
+import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import HomepageLayout from "@/Model/HomepageLayout";
 import { connectDB } from "@/lib/db";
 import redis from "@/lib/redis";
+import { ROLES } from "@/constant/roles";
 
 const EMPTY_LAYOUT = {
   hero_main: null,
@@ -13,6 +14,7 @@ const EMPTY_LAYOUT = {
   sports_featured: null,
 };
 
+// GET remains public for standard frontend users loading the landing page layout
 export async function GET() {
   try {
     await connectDB();
@@ -55,20 +57,41 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: Request) {
+// PUT is securely wrapped using NextAuth auth()
+export const PUT = auth(async function PUT(req) {
+  // 1. Check if user is authenticated
+  if (!req.auth || !req.auth.user) {
+    return NextResponse.json(
+      { success: false, message: "Authentication required." },
+      { status: 401 },
+    );
+  }
+
+  // 2. Enforce Role Validation (Only Admin and Editor can curate layout)
+  const userRole = req.auth.user.role;
+  if (userRole !== ROLES.ADMIN && userRole !== ROLES.EDITOR) {
+    return NextResponse.json(
+      { success: false, message: "Forbidden: Insufficient permissions." },
+      { status: 403 },
+    );
+  }
+
   try {
     await connectDB();
     const body = await req.json();
-    const { slots, userId } = body;
+    const { slots } = body;
 
-    // 1. Upsert (Update or Insert) the layout document configuration
+    // Securely pull the authenticated user's ID from session token instead of body payload
+    const userId = req.auth.user.id;
+
+    // 3. Upsert (Update or Insert) the layout document configuration
     const updatedLayout = await HomepageLayout.findOneAndUpdate(
-      {}, // Empty query targets the single existing config document
+      {}, // Single document tracking active configuration
       { slots, updatedBy: userId },
       { new: true, upsert: true },
     );
 
-    // 2. Fetch fully populated article data to store in cache
+    // 4. Fetch fully populated article data to store in cache
     const populatedLayout = await HomepageLayout.findOne()
       .populate("slots.hero_main")
       .populate("slots.hero_sidebar_1")
@@ -77,14 +100,14 @@ export async function PUT(req: Request) {
       .populate("slots.sports_featured")
       .lean();
 
-    // 3. Heavy Traffic Shield: Cache the entire dynamic engine directly inside Redis
+    // 5. Heavy Traffic Shield: Cache configuration inside Redis
     await redis.set(
       "cached_homepage_layout",
       JSON.stringify(populatedLayout.slots),
       { ex: 3600 },
-    ); // 1 hour TTL backup
+    );
 
-    // 4. On-Demand Revalidation: Force Next.js to purge the static homepage asset cache instantly
+    // 6. On-Demand Revalidation: Force Next.js to clear static asset caches instantly
     revalidatePath("/");
 
     return NextResponse.json({ success: true, data: updatedLayout.slots });
@@ -94,4 +117,4 @@ export async function PUT(req: Request) {
       { status: 500 },
     );
   }
-}
+});

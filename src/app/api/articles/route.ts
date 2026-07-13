@@ -4,11 +4,11 @@ import { connectDB } from "@/lib/db";
 import { ROLES } from "@/constant/roles";
 import slugify from "slugify";
 import { resolveTags } from "@/lib/resolveTags";
-
+import { revalidateTag } from "next/cache";
 // Force-register dependent Mongoose models with verified lowercase folder convention
 import Category from "@/Model/Category";
 import Article from "@/Model/Article";
-import Tag from "@/Model/Tag";
+import { toSlug } from "@/lib/slugify";
 
 // Ensure full Node.js environment execution
 export const runtime = "nodejs";
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
     await connectDB();
 
     // Unique slug generation handling both English and Bengali input ecosystems safely
-    let generatedSlug = slugify(title, { lower: true, strict: true });
+    let generatedSlug = toSlug(title);
     if (!generatedSlug || generatedSlug === "-") {
       generatedSlug = `news-${Date.now()}`;
     } else {
@@ -218,7 +218,7 @@ export async function POST(req: Request) {
     });
 
     await newArticle.save();
-
+    revalidateTag("articles");
     return NextResponse.json(
       {
         success: true,

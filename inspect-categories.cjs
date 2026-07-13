@@ -8,7 +8,7 @@ const Category = require("./src/Model/Category").default;
 (async () => {
   await mongoose.connect(process.env.MONGODB_URI);
   const cats = await Category.find({ isActive: true }).lean();
-  console.log(JSON.stringify(cats, null, 2));
+  // console.log(JSON.stringify(cats, null, 2));
   await mongoose.disconnect();
 })().catch((err) => {
   console.error(err);

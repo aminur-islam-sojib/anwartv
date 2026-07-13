@@ -8,7 +8,6 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// Next.js-কে বলা যে অজানা স্ল্যাগ আসলেও পেজটি অন-ডিমান্ড সার্ভার সাইডে তৈরি করে ক্যাশ করে নাও
 export const dynamicParams = true;
 
 function getCategoryLabel(category: unknown) {
@@ -32,36 +31,34 @@ function getCategoryLabel(category: unknown) {
         : typedCategory._id?.toString?.() || "অনির্ধারিত")
     );
   }
-
   return "অনির্ধারিত";
 }
 
 export default async function NewsDetailsPage({ params }: PageProps) {
   const { id } = await params;
 
-  // সুপার-ফাস্ট এজ ক্যাশ থেকে নিউজ ডেটা তুলে আনা
-  const article = await getCachedArticle(id);
+  // 1. URL-encoded স্ল্যাগটিকে ডিকোড করে বাংলা ইউনিকোডে রূপান্তর
+  const decodedSlug = decodeURIComponent(id);
 
-  // যদি নিউজটি ডাটাবেজে না থাকে, তবে সাথে সাথে ৪MD (Not Found) রেসপন্স পাঠানো
+  // 2. ডিকোডেড স্ল্যাগটি পাস করুন ক্যাশ সার্ভিসে
+  const article = await getCachedArticle(decodedSlug);
+
   if (!article) {
     notFound();
   }
 
   return (
     <article className="max-w-4xl mx-auto px-4 py-8 font-sans selection:bg-red-600 selection:text-white">
-      {/* ক্যাটাগরি এবং ব্রেডক্রাম্ব */}
       <div className="mb-4">
         <span className="text-xs font-black text-[#cc0000] uppercase tracking-widest bg-red-50 px-2.5 py-1 rounded">
           {getCategoryLabel(article.category)}
         </span>
       </div>
 
-      {/* সংবাদের মূল শিরোনাম */}
       <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 leading-tight mb-6 tracking-tight">
         {article.title}
       </h1>
 
-      {/* পাবলিশ টাইম ও মেটা ডাটা */}
       <div className="flex items-center gap-4 border-y border-slate-100 py-3 mb-8 text-xs text-slate-500">
         <div>
           প্রকাশিত:{" "}
@@ -75,21 +72,19 @@ export default async function NewsDetailsPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* অপ্টিমাইজড কাভার ইমেজ (ImgBB CDN ফ্রেন্ডলি) */}
       {article.coverImage?.url && (
         <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-100 mb-8 border border-slate-200/50">
           <Image
             src={article.coverImage.url}
             alt={article.title}
             fill
-            priority // লিড ইমেজের জন্য ব্রাউজার প্রিওরিটি দেওয়া (LCP optimization)
+            priority
             sizes="(max-width: 1024px) 100vw, 896px"
             className="object-cover"
           />
         </div>
       )}
 
-      {/* সংবাদের বিস্তারিত মূল বডি (Rich Text Content) */}
       <div
         className="prose prose-slate max-w-none text-slate-800 text-base leading-relaxed md:leading-loose space-y-6 font-normal"
         dangerouslySetInnerHTML={{ __html: article.content }}

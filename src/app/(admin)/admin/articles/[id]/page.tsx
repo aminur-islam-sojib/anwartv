@@ -139,7 +139,6 @@ export default async function ArticleDetailsPage({
   params,
 }: ArticleDetailsPageProps) {
   const { id } = await params;
-  console.log;
   const session = await auth();
 
   await connectDB();

@@ -7,7 +7,7 @@ import Article from "@/Model/Article";
 import type { ArticleStatus } from "@/Model/Article";
 import { resolveTags } from "@/lib/resolveTags";
 import { Types } from "mongoose";
-
+import { revalidateTag } from "next/cache";
 // Ensure full Node.js environment to prevent any Edge runtime execution issues
 export const runtime = "nodejs";
 
@@ -271,7 +271,7 @@ export async function PUT(
 
     // 7. Atomic Save (Fires Mongoose pre-save hook perfectly for readTime & publishedAt)
     await article.save();
-
+              revalidateTag("articles");
     return NextResponse.json(
       {
         success: true,

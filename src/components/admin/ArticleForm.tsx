@@ -23,6 +23,7 @@ interface ICatalogue {
   _id: string;
   name: string;
   slug: string;
+  parentCategory: { _id: string; name: string; slug: string } | null;
 }
 
 interface ArticleFormProps {
@@ -232,7 +233,12 @@ export default function ArticleForm({ initialData }: ArticleFormProps) {
       setLoading(false);
     }
   };
-
+  // Group subcategories under their top-level parent for the dropdown.
+  // Categories with no parent are rendered as standalone options;
+  // categories with a parent appear nested under an <optgroup>.
+  const topLevelCategories = categories.filter((c) => !c.parentCategory);
+  const subCategoriesOf = (parentId: string) =>
+    categories.filter((c) => c.parentCategory?._id === parentId);
   return (
     <form onSubmit={handleSubmit}>
       {/* নোটিফিকেশন অ্যালার্টস */}
@@ -403,11 +409,29 @@ export default function ArticleForm({ initialData }: ArticleFormProps) {
               required
             >
               <option value="">ক্যাটাগরি সিলেক্ট করুন</option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
+              {topLevelCategories.map((parent) => {
+                const children = subCategoriesOf(parent._id);
+                if (children.length === 0) {
+                  // No subcategories — render as a plain top-level option
+                  return (
+                    <option key={parent._id} value={parent._id}>
+                      {parent.name}
+                    </option>
+                  );
+                }
+                // Has subcategories — group them under an optgroup,
+                // but still allow selecting the parent itself.
+                return (
+                  <optgroup key={parent._id} label={parent.name}>
+                    <option value={parent._id}>{parent.name} (সাধারণ)</option>
+                    {children.map((child) => (
+                      <option key={child._id} value={child._id}>
+                        {"  ↳ " + child.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </div>
 

@@ -10,7 +10,10 @@ import { getDashboardPath } from "@/lib/dashboardRoutes";
 export default function Header() {
   const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState("");
-  const [breakingNews, setBreakingNews] = useState<{ title: string; slug: string } | null>(null);
+  const [breakingNews, setBreakingNews] = useState<{
+    title: string;
+    slug: string;
+  } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -122,7 +125,7 @@ export default function Header() {
                     e.preventDefault();
                     if (searchQuery.trim()) {
                       window.location.href = `/search?q=${encodeURIComponent(
-                        searchQuery.trim()
+                        searchQuery.trim(),
                       )}`;
                     }
                   }}
@@ -171,10 +174,13 @@ export default function Header() {
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 text-slate-800 border border-slate-200 z-999">
                     <div className="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">
-                      পদবি: {(session.user as { role?: string }).role || "রাইটার"}
+                      পদবি:{" "}
+                      {(session.user as { role?: string }).role || "রাইটার"}
                     </div>
                     <Link
-                      href={getDashboardPath((session.user as { role?: string })?.role)}
+                      href={getDashboardPath(
+                        (session.user as { role?: string })?.role,
+                      )}
                       onClick={() => setIsProfileOpen(false)}
                       className="flex items-center px-4 py-2 text-sm hover:bg-slate-50 transition-colors"
                     >

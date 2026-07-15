@@ -6,7 +6,9 @@ export default function NotFound() {
     <main className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-16 font-sans">
       <div className="max-w-md w-full text-center space-y-6">
         <div className="relative">
-          <h1 className="text-9xl font-black text-slate-100 select-none">404</h1>
+          <h1 className="text-9xl font-black text-slate-100 select-none">
+            404
+          </h1>
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-2xl font-black text-[#cc0000] bg-white px-4 py-1 border border-slate-200 rounded-lg shadow-sm">
               পৃষ্ঠাটি পাওয়া যায়নি
@@ -19,7 +21,8 @@ export default function NotFound() {
             দুঃখিত, অনুরোধ করা পাতাটি খুঁজে পাওয়া যায়নি।
           </h2>
           <p className="text-sm text-slate-500 leading-relaxed">
-            হতে পারে লিংকটি পরিবর্তন করা হয়েছে অথবা টাইপ করতে কোনো ভুল হয়েছে। নিচের লিংকগুলো ব্যবহার করে মূল সাইটে ফিরে যেতে পারেন।
+            হতে পারে লিংকটি পরিবর্তন করা হয়েছে অথবা টাইপ করতে কোনো ভুল হয়েছে।
+            নিচের লিংকগুলো ব্যবহার করে মূল সাইটে ফিরে যেতে পারেন।
           </p>
         </div>
 

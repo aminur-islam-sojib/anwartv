@@ -4,6 +4,8 @@ import { connectDB } from "@/lib/db";
 import Article from "@/Model/Article";
 import Category from "@/Model/Category";
 
+export const dynamic = "force-dynamic";
+
 type PublicArticle = {
   _id: string;
   title: string;
@@ -17,6 +19,7 @@ type PublicArticle = {
   createdAt?: string;
 };
 
+// ...rest of the file unchanged
 function getCategoryLabel(category?: PublicArticle["category"]) {
   if (!category) return "অনির্ধারিত";
   if (typeof category === "string") return category;

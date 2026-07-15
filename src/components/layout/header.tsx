@@ -10,10 +10,11 @@ import { getDashboardPath } from "@/lib/dashboardRoutes";
 export default function Header() {
   const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState("");
+  const [breakingNews, setBreakingNews] = useState<{ title: string; slug: string } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // বাংলা তারিখ ফরম্যাট করার জন্য ইফেক্ট
+  // Effect to format date in Bengali
   useEffect(() => {
     const options: Intl.DateTimeFormatOptions = {
       weekday: "long",
@@ -21,7 +22,23 @@ export default function Header() {
       month: "long",
       day: "numeric",
     };
-    setCurrentDate(new Date().toLocaleDateString("bn-BD", options));
+    const dateStr = new Date().toLocaleDateString("bn-BD", options);
+    const timer = setTimeout(() => {
+      setCurrentDate(dateStr);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Effect to fetch breaking news
+  useEffect(() => {
+    fetch("/api/articles/breaking")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setBreakingNews(data.data);
+        }
+      })
+      .catch((err) => console.error("Error fetching breaking news:", err));
   }, []);
 
   // মূল ক্যাটাগরি মেনু আইটেমসমূহ
@@ -41,14 +58,28 @@ export default function Header() {
       <div className="bg-slate-50 text-xs text-slate-600 py-2 px-4 border-b border-slate-200">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>{currentDate || "লোডিং..."}</div>
-          <div className="hidden md:flex items-center space-x-2">
-            <span className="bg-[#cc0000] text-white px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">
-              ব্রেকিং
-            </span>
-            <p className="text-slate-700 truncate max-w-md">
-              সর্বশেষ সংবাদের আপডেট এখানে নিয়মিত দেখতে পাবেন...
-            </p>
-          </div>
+          {breakingNews ? (
+            <div className="hidden md:flex items-center space-x-2">
+              <span className="bg-[#cc0000] text-white px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">
+                ব্রেকিং
+              </span>
+              <Link
+                href={`/news/${breakingNews.slug}`}
+                className="text-slate-700 hover:text-[#cc0000] hover:underline truncate max-w-md transition-colors font-medium"
+              >
+                {breakingNews.title}
+              </Link>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center space-x-2">
+              <span className="bg-[#cc0000] text-white px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">
+                ব্রেকিং
+              </span>
+              <p className="text-slate-700 truncate max-w-md">
+                সর্বশেষ সংবাদের আপডেট এখানে নিয়মিত দেখতে পাবেন...
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -100,10 +131,10 @@ export default function Header() {
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 text-slate-800 border border-slate-200 z-999">
                     <div className="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">
-                      পদবি: {(session.user as any).role || "রাইটার"}
+                      পদবি: {(session.user as { role?: string }).role || "রাইটার"}
                     </div>
                     <Link
-                      href={getDashboardPath((session.user as any)?.role)}
+                      href={getDashboardPath((session.user as { role?: string })?.role)}
                       onClick={() => setIsProfileOpen(false)}
                       className="flex items-center px-4 py-2 text-sm hover:bg-slate-50 transition-colors"
                     >

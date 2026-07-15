@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "src/infrastructure/config/nav.config.ts", "src/app/(admin)/editor/dashboard"  ],
   "exclude": ["node_modules"]
 }

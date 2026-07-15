@@ -13,6 +13,8 @@ export default function Header() {
   const [breakingNews, setBreakingNews] = useState<{ title: string; slug: string } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Effect to format date in Bengali
   useEffect(() => {
@@ -112,10 +114,48 @@ export default function Header() {
 
           {/* সার্চ ও ইউজার অ্যাকশন কন্ট্রোল */}
           <div className="flex items-center space-x-4">
-            {/* সার্চ আইকন */}
-            <button className="p-2 hover:bg-black/20 rounded-full transition-colors">
-              <Search className="h-5 w-5 text-white" />
-            </button>
+            {/* Search Bar */}
+            <div className="relative flex items-center">
+              {isSearchOpen ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (searchQuery.trim()) {
+                      window.location.href = `/search?q=${encodeURIComponent(
+                        searchQuery.trim()
+                      )}`;
+                    }
+                  }}
+                  className="flex items-center absolute right-0 bg-white text-slate-800 rounded-lg shadow-lg border border-slate-200 overflow-hidden w-60 z-30 transition-all duration-300"
+                >
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="খুঁজুন..."
+                    className="flex-1 px-3 py-1.5 text-xs outline-none"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className="p-1.5 hover:bg-slate-100 text-slate-400"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="p-2 hover:bg-black/20 rounded-full transition-colors"
+                >
+                  <Search className="h-5 w-5 text-white" />
+                </button>
+              )}
+            </div>
 
             {/* প্রোফাইল ড্রপডাউন (NextAuth সেশন ভিত্তিক) */}
             {session ? (

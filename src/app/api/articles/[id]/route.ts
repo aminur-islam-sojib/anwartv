@@ -271,7 +271,7 @@ export async function PUT(
 
     // 7. Atomic Save (Fires Mongoose pre-save hook perfectly for readTime & publishedAt)
     await article.save();
-              revalidateTag("articles");
+    revalidateTag("articles", "max");
     return NextResponse.json(
       {
         success: true,

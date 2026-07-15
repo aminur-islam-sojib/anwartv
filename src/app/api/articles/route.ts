@@ -218,7 +218,7 @@ export async function POST(req: Request) {
     });
 
     await newArticle.save();
-    revalidateTag("articles");
+    revalidateTag("articles", "max");
     return NextResponse.json(
       {
         success: true,

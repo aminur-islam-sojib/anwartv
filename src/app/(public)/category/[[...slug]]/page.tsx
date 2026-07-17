@@ -21,7 +21,7 @@ const getCategoryData = unstable_cache(
 
     // অ্যারের শেষ এলিমেন্টটিই হলো আমাদের টার্গেটেড ক্যাটাগরি/সাব-ক্যাটাগরি স্ল্যাগ
     const targetSlug = slugArray[slugArray.length - 1];
-    
+
     // টার্গেট ক্যাটাগরি ডাটা তুলে আনা
     const currentCategory = await Category.findOne({ slug: targetSlug }).lean();
     if (!currentCategory) return null;
@@ -34,9 +34,11 @@ const getCategoryData = unstable_cache(
       queryFilter.category = currentCategory._id;
     } else {
       // যদি এটি মেইন ক্যাটাগরি হয়, তবে এই ক্যাটাগরি এবং এর আন্ডারে থাকা সব সাব-ক্যাটাগরির নিউজও একসাথে দেখাবো
-      const subCategories = await Category.find({ parent: currentCategory._id }).select("_id").lean();
-      const subCategoryIds = subCategories.map(sub => sub._id);
-      
+      const subCategories = await Category.find({ parent: currentCategory._id })
+        .select("_id")
+        .lean();
+      const subCategoryIds = subCategories.map((sub) => sub._id);
+
       // মেইন ক্যাটাগরি আইডি + সব সাব-ক্যাটাগরি আইডির নিউজ একসাথে কুয়েরি
       queryFilter.category = { $in: [currentCategory._id, ...subCategoryIds] };
     }
@@ -56,19 +58,22 @@ const getCategoryData = unstable_cache(
       isSubCategory: !!(currentCategory as any).parent,
       articles: JSON.parse(JSON.stringify(articles)),
       totalPages: Math.ceil(totalArticles / limit),
-      currentPage: page
+      currentPage: page,
     };
   },
   ["production-multilevel-category-cache"],
   {
     revalidate: 60, // ৬০ সেকেন্ড এজ ক্যাশিং (ISR)
-    tags: ["articles", "categories"]
-  }
+    tags: ["articles", "categories"],
+  },
 );
 
 export const dynamicParams = true;
 
-export default async function MultiLevelCategoryPage({ params, searchParams }: CategoryPageProps) {
+export default async function MultiLevelCategoryPage({
+  params,
+  searchParams,
+}: CategoryPageProps) {
   const { slug } = await params;
   const sParams = await searchParams;
   const currentPage = Number(sParams.page) || 1;
@@ -103,13 +108,21 @@ export default async function MultiLevelCategoryPage({ params, searchParams }: C
 
       {/* নিউজ গ্রিড */}
       {data.articles.length === 0 ? (
-        <p className="text-slate-500 text-center py-12">এই মুহূর্তে কোনো সংবাদ পাওয়া যায়নি।</p>
+        <p className="text-slate-500 text-center py-12">
+          এই মুহূর্তে কোনো সংবাদ পাওয়া যায়নি।
+        </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.articles.map((article: any) => (
-            <article key={article._id} className="group flex flex-col space-y-3 bg-white border border-slate-100 p-3 rounded-xl shadow-sm transition-all hover:shadow-md">
+            <article
+              key={article._id}
+              className="group flex flex-col space-y-3 bg-white border border-slate-100 p-3 rounded-xl shadow-sm transition-all hover:shadow-md"
+            >
               {article.coverImage?.url && (
-                <Link href={`/news/${article.slug}`} className="block overflow-hidden rounded-lg relative aspect-[16/10] w-full bg-slate-50">
+                <Link
+                  href={`/news/${article.slug}`}
+                  className="block overflow-hidden rounded-lg relative aspect-[16/10] w-full bg-slate-50"
+                >
                   <Image
                     src={article.coverImage.url}
                     alt={article.title}
@@ -126,7 +139,8 @@ export default async function MultiLevelCategoryPage({ params, searchParams }: C
                   </h2>
                 </Link>
                 <p className="text-xs text-slate-500 line-clamp-2">
-                  {article.excerpt || "বিস্তারিত সংবাদটি পড়তে এখানে ক্লিক করুন..."}
+                  {article.excerpt ||
+                    "বিস্তারিত সংবাদটি পড়তে এখানে ক্লিক করুন..."}
                 </p>
               </div>
             </article>
@@ -138,7 +152,10 @@ export default async function MultiLevelCategoryPage({ params, searchParams }: C
       {data.totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 mt-12">
           {currentPage > 1 && (
-            <Link href={`${basePath}?page=${currentPage - 1}`} className="px-4 py-2 border rounded-lg text-sm font-semibold hover:bg-slate-50">
+            <Link
+              href={`${basePath}?page=${currentPage - 1}`}
+              className="px-4 py-2 border rounded-lg text-sm font-semibold hover:bg-slate-50"
+            >
               পূর্ববর্তী
             </Link>
           )}
@@ -146,7 +163,10 @@ export default async function MultiLevelCategoryPage({ params, searchParams }: C
             পৃষ্ঠা {currentPage} / {data.totalPages}
           </span>
           {currentPage < data.totalPages && (
-            <Link href={`${basePath}?page=${currentPage + 1}`} className="px-4 py-2 border rounded-lg text-sm font-semibold hover:bg-slate-50">
+            <Link
+              href={`${basePath}?page=${currentPage + 1}`}
+              className="px-4 py-2 border rounded-lg text-sm font-semibold hover:bg-slate-50"
+            >
               পরবর্তী
             </Link>
           )}

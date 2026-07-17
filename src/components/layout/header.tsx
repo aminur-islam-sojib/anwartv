@@ -10,10 +10,16 @@ import { getDashboardPath } from "@/lib/dashboardRoutes";
 export default function Header() {
   const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState("");
+  const [breakingNews, setBreakingNews] = useState<{
+    title: string;
+    slug: string;
+  } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // বাংলা তারিখ ফরম্যাট করার জন্য ইফেক্ট
+  // Effect to format date in Bengali
   useEffect(() => {
     const options: Intl.DateTimeFormatOptions = {
       weekday: "long",
@@ -21,7 +27,23 @@ export default function Header() {
       month: "long",
       day: "numeric",
     };
-    setCurrentDate(new Date().toLocaleDateString("bn-BD", options));
+    const dateStr = new Date().toLocaleDateString("bn-BD", options);
+    const timer = setTimeout(() => {
+      setCurrentDate(dateStr);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Effect to fetch breaking news
+  useEffect(() => {
+    fetch("/api/articles/breaking")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setBreakingNews(data.data);
+        }
+      })
+      .catch((err) => console.error("Error fetching breaking news:", err));
   }, []);
 
   // মূল ক্যাটাগরি মেনু আইটেমসমূহ
@@ -41,14 +63,28 @@ export default function Header() {
       <div className="bg-slate-50 text-xs text-slate-600 py-2 px-4 border-b border-slate-200">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>{currentDate || "লোডিং..."}</div>
-          <div className="hidden md:flex items-center space-x-2">
-            <span className="bg-[#cc0000] text-white px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">
-              ব্রেকিং
-            </span>
-            <p className="text-slate-700 truncate max-w-md">
-              সর্বশেষ সংবাদের আপডেট এখানে নিয়মিত দেখতে পাবেন...
-            </p>
-          </div>
+          {breakingNews ? (
+            <div className="hidden md:flex items-center space-x-2">
+              <span className="bg-[#cc0000] text-white px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">
+                ব্রেকিং
+              </span>
+              <Link
+                href={`/news/${breakingNews.slug}`}
+                className="text-slate-700 hover:text-[#cc0000] hover:underline truncate max-w-md transition-colors font-medium"
+              >
+                {breakingNews.title}
+              </Link>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center space-x-2">
+              <span className="bg-[#cc0000] text-white px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">
+                ব্রেকিং
+              </span>
+              <p className="text-slate-700 truncate max-w-md">
+                সর্বশেষ সংবাদের আপডেট এখানে নিয়মিত দেখতে পাবেন...
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -81,10 +117,48 @@ export default function Header() {
 
           {/* সার্চ ও ইউজার অ্যাকশন কন্ট্রোল */}
           <div className="flex items-center space-x-4">
-            {/* সার্চ আইকন */}
-            <button className="p-2 hover:bg-black/20 rounded-full transition-colors">
-              <Search className="h-5 w-5 text-white" />
-            </button>
+            {/* Search Bar */}
+            <div className="relative flex items-center">
+              {isSearchOpen ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (searchQuery.trim()) {
+                      window.location.href = `/search?q=${encodeURIComponent(
+                        searchQuery.trim(),
+                      )}`;
+                    }
+                  }}
+                  className="flex items-center absolute right-0 bg-white text-slate-800 rounded-lg shadow-lg border border-slate-200 overflow-hidden w-60 z-30 transition-all duration-300"
+                >
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="খুঁজুন..."
+                    className="flex-1 px-3 py-1.5 text-xs outline-none"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className="p-1.5 hover:bg-slate-100 text-slate-400"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="p-2 hover:bg-black/20 rounded-full transition-colors"
+                >
+                  <Search className="h-5 w-5 text-white" />
+                </button>
+              )}
+            </div>
 
             {/* প্রোফাইল ড্রপডাউন (NextAuth সেশন ভিত্তিক) */}
             {session ? (
@@ -100,10 +174,13 @@ export default function Header() {
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 text-slate-800 border border-slate-200 z-999">
                     <div className="px-4 py-2 border-b border-slate-100 text-xs text-slate-500">
-                      পদবি: {(session.user as any).role || "রাইটার"}
+                      পদবি:{" "}
+                      {(session.user as { role?: string }).role || "রাইটার"}
                     </div>
                     <Link
-                      href={getDashboardPath((session.user as any)?.role)}
+                      href={getDashboardPath(
+                        (session.user as { role?: string })?.role,
+                      )}
                       onClick={() => setIsProfileOpen(false)}
                       className="flex items-center px-4 py-2 text-sm hover:bg-slate-50 transition-colors"
                     >

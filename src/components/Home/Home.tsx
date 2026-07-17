@@ -131,33 +131,28 @@ export default async function PublicHomepage() {
   const safeRecentArticles = JSON.parse(JSON.stringify(recentArticles));
 
   return (
-    <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 font-sans space-y-12 selection:bg-red-600 selection:text-white">
+    <main className="mx-auto p-4 sm:p-6 lg:p-8 font-sans space-y-12 selection:bg-red-600 selection:text-white">
       {/* ZONE 1: THE TOP FOLD HERO GRID */}
-      <HeroGrid 
-        main={slots.hero_main} 
-        sidebar1={slots.hero_sidebar_1} 
-        sidebar2={slots.hero_sidebar_2} 
-        getCategoryLabel={getCategoryLabel} 
-      />
-
-      <hr className="border-slate-100" />
-
-      {/* ZONE 2: ক্যাটাগরি এবং ডানপাশের রিসেন্ট নিউজ সাইডবার লেআউট */}
-      {/* আমরা পুরো সেকশনকে ১২ কলামের গ্রিডে ভাগ করে ক্যাটাগরিকে ৮ এবং সাইডবারকে ৪ কলাম দেবো */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* বামপাশের ক্যাটাগরি কন্টেইনার (৮ কলাম) */}
-        <div className="lg:col-span-8">
-          <CategoryBuckets 
-            politics={slots.politics_featured} 
-            sports={slots.sports_featured} 
+        <div className="lg:col-span-9">
+          <HeroGrid
+            main={slots.hero_main}
+            sidebar1={slots.hero_sidebar_1}
+            sidebar2={slots.hero_sidebar_2}
+            getCategoryLabel={getCategoryLabel}
           />
         </div>
-
-        {/* ডানপাশের রিসেন্ট নিউজ সাইডবার (৪ কলাম) */}
-        <RecentNewsSidebar articles={safeRecentArticles} />
-
+        <div className="lg:col-span-3">
+          <RecentNewsSidebar articles={safeRecentArticles} />
+        </div>
       </div>
+
+      <hr className="border-slate-100" />
+      <CategoryBuckets
+        politics={slots.politics_featured}
+        sports={slots.sports_featured}
+      />
+
     </main>
   );
 }
